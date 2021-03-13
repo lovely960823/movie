@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> 
+    <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+   	
+   	    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app">
+	 <el-button type="primary" @click="createIndex">重建索引</el-button>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app',
+  data: {
+	  
+  },
+  methods:{
+	  createIndex(){
+		  this.$confirm('确定要重建索引？', '提示', {
+	          confirmButtonText: '确定',
+	          cancelButtonText: '取消',
+	          type: 'warning'
+	        }).then(() => {
+	        	 axios.get('/back/createIndex')
+		   		  .then(res=>{
+		   			this.$message({
+			            type: 'success',
+			            message: res.data.msg
+			          });
+		   		}).catch(error=>{
+		   			console.log(error);
+		   		})
+	        }).catch(() => {
+	        });
+	  }
+  },
+})
+</script>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+   	
+    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app">
+ 	  <vxe-toolbar export print custom>
+         <template v-slot:buttons>
+         <shiro:hasPermission name="sys:menu:add">
+           <vxe-button @click="addParentMenu">新增</vxe-button>
+           </shiro:hasPermission>
+           <vxe-button @click="icon">图标参考</vxe-button>
+         </template>
+       </vxe-toolbar>
+  	  <vxe-table
+  	  	  v-loading="loading"
+          resizable
+          row-id="id"
+          :data="tableData"
+          :tree-config="{children: 'childs'}"  //子节点数据配置 
+          :edit-config="{trigger: 'dblclick', mode: 'row',showStatus: true}" //点击可编辑
+          :checkbox-config="{labelField: '', checkStrictly: true}"
+          @checkbox-change="selectChangeEvent">
+          <vxe-table-column type="checkbox" title="复选" width="100" tree-node></vxe-table-column>
+          <vxe-table-column field="name" title="菜单名称" :edit-render="{name: 'input'}"></vxe-table-column>
+          <vxe-table-column field="url" title="请求地址" :edit-render="{name: 'input'}"></vxe-table-column>
+          <vxe-table-column field="perm" title="操作权限" :edit-render="{name: 'input'}"></vxe-table-column>
+          <vxe-table-column field="sorts" title="菜单排序"></vxe-table-column>
+          <vxe-table-column field="icon" title="菜单图标"></vxe-table-column>
+          <vxe-table-column title="操作" width="140">
+            <template v-slot="{ row }">
+            <shiro:hasPermission name="sys:menu:add">
+              <vxe-button type="text" icon="el-icon-circle-plus" title="新增子菜单" @click="addSonMenu(row)" v-if="row.level!=3"></vxe-button>
+            </shiro:hasPermission>
+            <shiro:hasPermission name="sys:menu:edit">
+            	 <vxe-button type="text" icon="fa fa-edit" @click="toUpdateMenu(row)" title="修改"></vxe-button>
+            </shiro:hasPermission>
+            <shiro:hasPermission name="sys:menu:del">
+            	<vxe-button type="text" icon="fa fa-trash-o" title="删除" @click="delMenuById(row)"></vxe-button>
+            </shiro:hasPermission>
+            </template>
+          </vxe-table-column>
+        </vxe-table>
+        
+        <!-- 添加dialog -->
+        <el-dialog
+		  title="添加菜单"
+		  :visible.sync="insertDialogVisible"
+		  width="50%">
+		  
+		  <el-form ref="form" :model="form" label-width="80px" :rules="rules">
+			  
+			  <el-form-item label="菜单名称" prop="name">
+			    <el-input v-model="form.name"></el-input>
+			  </el-form-item>
+			 
+			   <el-form-item label="请求地址">
+			    <el-input v-model="form.url"></el-input>
+			  </el-form-item>
+			  
+			  <el-form-item label="操作权限">
+			    <el-input v-model="form.perm" placeholder="例如  xxx:xxx:xxx 等"></el-input>
+			  </el-form-item>
+			  
+			  <el-form-item label="菜单排序" prop="sorts">
+			    <el-input v-model="form.sorts" type= "number" placeholder="数字大的靠下显示"></el-input>
+			  </el-form-item>
+			  
+			  <el-form-item label="菜单图标">
+			    <el-input v-model="form.icon" ></el-input>
+			  </el-form-item>
+			  
+			</el-form>
+		  
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="insertDialogVisible = false">取 消</el-button>
+		    <el-button type="primary" @click="addMenu">确 定</el-button>
+		  </span>
+		</el-dialog>
+		
+		<!-- 修改dialog -->
+        <el-dialog
+		  title="添加菜单"
+		  :visible.sync="updateDialogVisible"
+		  width="50%">
+		  <el-form ref="updateform" :model="updateform" label-width="80px" :rules="rules">
+			  <el-form-item label="菜单名称" prop="name">
+			    <el-input v-model="updateform.name"></el-input>
+			  </el-form-item>
+			   <el-form-item label="请求地址">
+			    <el-input v-model="updateform.url"></el-input>
+			  </el-form-item>
+			  <el-form-item label="操作权限">
+			    <el-input v-model="updateform.perm" placeholder="例如  xxx:xxx:xxx 等"></el-input>
+			  </el-form-item>
+			  <el-form-item label="菜单排序" prop="sorts">
+			    <el-input v-model="updateform.sorts" type= "number" placeholder="数字大的靠下显示"></el-input>
+			  </el-form-item>
+			  <el-form-item label="菜单图标">
+			    <el-input v-model="updateform.icon" ></el-input>
+			  </el-form-item>
+			</el-form>
+		  
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="updateDialogVisible = false">取 消</el-button>
+		    <el-button type="primary" @click="updateMenu">确 定</el-button>
+		  </span>
+		</el-dialog>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app',
+  data: {
+    message: 'Hello Vue!',
+    loading: true,
+    insertDialogVisible: false,
+    updateDialogVisible:false,
+   	tableData:[],
+   	form: {
+        name:'',
+        url:'',
+        perm:'',
+        pid:'',
+        level:'',
+        sorts:'1',
+        icon:''
+        
+   	},
+   	updateform: {
+   		id:'',
+        name:'',
+        url:'',
+        perm:'',
+        pid:'',
+        level:'',
+        sorts:'1',
+        icon:''
+        
+   	},
+	rules:{
+	         name:[
+	           { required: true, message: '请输入菜单名称', trigger: 'blur' }
+	         ],
+	         sorts:[
+		           { required: true, message: '请输入菜单排序', trigger: 'blur' }
+		         ]
+	 	 }
+  },
+  methods:{
+	  initMenu(){
+		  axios.get('/back/sys/menu/getMenu')
+		  .then(res=>{
+			  this.tableData = res.data.data;
+			  this.loading=false;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  selectChangeEvent ({ records }) { //获取选中的数据
+          console.info(records)
+      },
+      addParentMenu(){
+    	  this.form.pid=0;
+    	  this.form.level=1;
+    	  this.insertDialogVisible=true;
+      },
+      addSonMenu(row){
+    	  this.form.pid = row.id;
+    	  this.form.level = parseInt(row.level) + parseInt("1");
+    	  this.insertDialogVisible=true;
+      },
+      toUpdateMenu(row){
+    	  this.updateDialogVisible=true;
+    	  axios.get('/back/sys/menu/getMenuById?id='+row.id)
+		  .then(res=>{
+			  console.log(res.data);
+			  this.updateform = res.data.data;
+		}).catch(error=>{
+			console.log(error);
+		})
+      },
+      addMenu(){
+    	  if(this.form.name==''||this.form.name==null){
+    		  this.$notify({
+		          title: '错误',
+		          message: "请填入名称",
+		          type: 'error'
+		        });
+    		  return;
+    	  }
+    	  axios.post('/back/sys/menu/addMenu',this.form)
+    		  .then(res=>{
+    			  if(res.data.code==200){
+    					 this.$notify({
+    				          title: '新增成功',
+    				          message: res.data.msg,
+    				          type: 'success'
+    				        });
+    				 }else{
+    					 this.$notify({
+    				          title: '新增失败',
+    				          message: res.data.msg,
+    				          type: 'error'
+    				        });
+    				 }
+    		this.insertDialogVisible=false; 
+    		this.initMenu();
+    		this.form='';
+    		}).catch(error=>{
+    			console.log(error);
+    		})
+      },
+      updateMenu(){
+    	   if(this.updateform.name==''||this.updateform.name==null){
+    		   this.$notify({
+			          title: '错误',
+			          message: "请填入名称",
+			          type: 'error'
+			        });
+    		  return;
+    	  } 
+    	  axios.post('/back/sys/menu/updateMenu',this.updateform)
+    		  .then(res=>{
+    			  if(res.data.code==200){
+    					 this.$notify({
+    				          title: '修改成功',
+    				          message: res.data.msg,
+    				          type: 'success'
+    				        });
+    				 }else{
+    					 this.$notify({
+    				          title: '修改失败',
+    				          message: res.data.msg,
+    				          type: 'error'
+    				        });
+    				 }
+    		this.updateDialogVisible=false; 
+    		this.initMenu();
+    		this.updateform='';
+    		}).catch(error=>{
+    			console.log(error);
+    		})
+      },
+      delMenuById(row){
+   	  this.$confirm('确认要删除该条信息吗?', '提示', {
+   	        confirmButtonText: '确定',
+   	        cancelButtonText: '取消',
+   	        type: 'warning'
+   	      }).then(() => {
+   	    	axios.get('/back/sys/menu/delMenuById?id='+row.id)
+	  		  .then(res=>{
+	  			  if(res.data.code==200){
+	  					 this.$notify({
+	  				          title: '删除成功',
+	  				          message: res.data.msg,
+	  				          type: 'success'
+	  				        });
+	  				 }else{
+	  					 this.$notify({
+	  				          title: '删除失败',
+	  				          message: res.data.msg,
+	  				          type: 'error'
+	  				        });
+	  				 }  
+	  			  this.initMenu();
+	  		}).catch(error=>{
+	  			console.log(error);
+	  		})
+   	      }).catch(() => {
+   	        this.$message({
+   	          type: 'info',
+   	          message: '已取消删除'
+   	        });
+   	      });
+      },
+      icon(){
+    	  window.open('https://www.layui.com/doc/element/icon.html');
+      }
+  },
+  created(){
+	  this.initMenu();
+  }
+})
+</script>
+
+</html>

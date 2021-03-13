@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+   	
+   	    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app">
+	    <el-form :inline="true" :model="formInline" class="demo-form-inline">
+		  <el-form-item label="订单号">
+		    <el-input v-model="formInline.oid" placeholder="订单"></el-input>
+		  </el-form-item>
+		  
+		  <el-form-item label="登记人">
+		    <el-input v-model="formInline.username" placeholder="登记人"></el-input>
+		  </el-form-item>
+		  
+		  <el-form-item label="证件号">
+		    <el-input v-model="formInline.idnumber" placeholder="证件号"></el-input>
+		  </el-form-item>
+		  
+		  <el-form-item label="入住日期">
+		  	<el-date-picker
+		      v-model="formInline.createTime"
+		      type="date"
+		      placeholder="选择日期">
+		    </el-date-picker>
+		  </el-form-item>
+		  
+		  <el-form-item>
+		  	 <shiro:hasPermission name="hotel:order:select">
+		    <el-button type="primary" @click="initData" >查询</el-button>
+		    </shiro:hasPermission>
+		  </el-form-item>
+		</el-form>
+		
+		<template>
+		  <el-table
+		    :data="tableData"
+		    border
+		    style="width: 100%">
+		    
+		      <el-table-column
+		      prop="oid"
+		      label="订单号"
+		      width="200">
+		    </el-table-column>
+		    
+		      <el-table-column
+		      prop="createTime"
+		      label="时间"
+		      width="200">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="rid"
+		      label="房间号"
+		      width="200">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="username"
+		      label="登记人"
+		      width="150">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="phone"
+		      label="联系方式"
+		      width="200">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="idnumber"
+		      label="证件号"
+		      width="300">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      fixed="right"
+		      label="操作"
+		      width="100">
+		      <template slot-scope="scope">
+		      <shiro:hasPermission name="hotel:order:del">
+		        <el-button @click="del(scope.row)" type="text" size="small" >删除</el-button>
+		      </shiro:hasPermission>
+		      </template>
+		    </el-table-column>
+		  </el-table>
+		  
+		  <el-pagination
+		      @size-change="sizeChangeHandle"
+		      @current-change="currentChangeHandle"
+		      :current-page="pageIndex"
+		      :page-sizes="[10, 20, 50, 100]"
+		      :page-size="pageSize"
+		      :total="totals"
+		      layout="total, sizes, prev, pager, next, jumper"
+		    ></el-pagination>
+		    
+		</template>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app',
+  data: {
+	  labelPosition: 'right',
+	  formInline: {
+         oid:'',
+         username:'',
+         idnumber:'',
+         createTime:'',
+         pageSize:10,
+         pageNum:1,
+	   },
+	   totals:1,   //默认设置为1
+	   pageIndex:1,//默认设置为1
+	   pageSize:1,  //默认设置为1
+	   tableData: [],
+	   dialogVisible: false,
+	   form:{
+		   rid:'',
+		   type:'',
+		   price:'',
+		   descri:''
+	   }
+  },
+  methods:{
+	  initData(){
+		  axios.post('/back/hotel/order/orderManage',this.formInline)
+		  .then(res=>{
+			  this.tableData = res.data.data.list;
+			  this.totals=res.data.data.total;
+		}).catch(error=>{
+		})
+	  },
+	  currentChangeHandle(val){ //跳转页
+	      this.formInline.pageNum=val;
+	      this.initData();
+	  },
+	  sizeChangeHandle(val){//选择每页数据的
+	      this.formInline.pageSize=val;
+	      this.initData();
+	  },
+	  del(row){
+		  this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+	          confirmButtonText: '确定',
+	          cancelButtonText: '取消',
+	          type: 'warning'
+	        }).then(() => {
+	        	axios.get('/back/hotel/order/delById/'+row.id)
+		  		  .then(res=>{
+		  			this.$message(res.data.msg);
+		  			this.initData();
+		  		}).catch(error=>{
+		  		})
+	        }).catch(() => {
+	        });
+	  }
+  },
+  created(){
+	  this.initData();
+  },
+
+})
+</script>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+    <script src="/static/echart/echarts.js"></script>
+   	
+   	<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+    <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+    <script src="/static/vue/vxe-table/xe-utils.js"></script>
+    <script src="/static/vue/vxe-table/vxe-table.js"></script>
+    <!-- 请求 -->
+    <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app" >
+	      <div id="main" style="width: 100%;height:400px;margin-top: 200px"></div>
+  </div>
+</body>
+<script type="text/javascript">
+function dataAjax(){
+    $.ajax({
+        type:"get",
+        url:"/back/hotel/getEchart",
+        data:{},
+        cache: false,
+        dataType:"json",
+        success: function(data){
+            makeData(data);
+        },
+        error:function(){
+            alert("操作失败,请联系系统管理员");
+        }
+    });
+}
+
+function makeData(data){
+    var myChart = echarts.init(document.getElementById('main'));   //初始化
+    var option = {
+        title: {
+          text: '房间销量折线图',
+          x:'center'
+        },
+        dataZoom: [{
+		      type: 'slider',
+		      show: true,
+		      xAxisIndex: [0],
+		      left: '9%',
+		      bottom: -5,
+		      start: 0,
+		      end: 100 //初始化滚动条
+		}],
+	    xAxis: {
+	        type: 'category',
+	        data: data.dataX
+	        //data: ['2019-09-20', '2019-09-21', '2019-09-22', '2019-09-23', '2019-09-24', '2019-09-25', '2019-09-26']
+	    },
+	    yAxis: {
+	        type: 'value'
+	    },
+	    series: [{
+	        //data: [820, 932, 901, 934, 1290, 1330, 1320],
+	        data: data.dataY,
+	        type: 'line',
+	        itemStyle: { 
+	          normal: {
+	              label : {
+	                  show: true
+	              }
+	           }
+	        }
+	    }],
+	    noDataLoadingOption: {
+            text: '暂无数据',
+            effect: 'bubble',
+            effectOption: {
+                effect: {
+                    n: 0
+                }
+            }
+        }
+	};
+
+    myChart.setOption(option);
+}
+//点击查询
+dataAjax();            
+</script>
+</html>

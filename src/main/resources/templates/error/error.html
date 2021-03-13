@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+	<head>
+		<meta charset="utf-8" />
+		<base th:href="@{${#httpServletRequest.getScheme()}+'://'+${#httpServletRequest.getServerName()}+':'+${#httpServletRequest.getServerPort()}+'/'+${#httpServletRequest.getContextPath()}+'/'}"/>
+		<title>登录</title>
+		<script src="/static/jquery/jquery.min.js"></script>
+	<link href="/static/back/error/css/404.css" rel="stylesheet" type="text/css" />
+	<script type="text/javascript">
+	$(function() {
+		var h = $(window).height();
+		$('body').height(h);
+		$('.mianBox').height(h);
+		centerWindow(".tipInfo");
+	});
+
+	//2.将盒子方法放入这个方，方便法统一调用
+	function centerWindow(a) {
+		center(a);
+		//自适应窗口
+		$(window).bind('scroll resize',
+				function() {
+					center(a);
+				});
+	}
+
+	//1.居中方法，传入需要剧中的标签
+	function center(a) {
+		var wWidth = $(window).width();
+		var wHeight = $(window).height();
+		var boxWidth = $(a).width();
+		var boxHeight = $(a).height();
+		var scrollTop = $(window).scrollTop();
+		var scrollLeft = $(window).scrollLeft();
+		var top = scrollTop + (wHeight - boxHeight) / 2;
+		var left = scrollLeft + (wWidth - boxWidth) / 2;
+		$(a).css({
+			"top": top,
+			"left": left
+		});
+	}
+</script>
+<style type="text/css">
+.tipInfo .in {
+    background: #fff;
+    padding: 0 10%;
+    padding-top: 10px;
+}
+.tipInfo .in p {
+    padding: 30px 0 50px 0;
+    text-align: center;
+    color: #289575;
+    font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+<div class="mianBox">
+	<img src="/static/back/error/images/yun0.png" alt="" class="yun yun0" />
+	<img src="/static/back/error/images/yun1.png" alt="" class="yun yun1" />
+	<img src="/static/back/error/images/yun2.png" alt="" class="yun yun2" />
+	<img src="/static/back/error/images/bird.png" alt="" class="bird" />
+	<img src="/static/back/error/images/san.png" alt="" class="san" />
+	<div class="tipInfo">
+		<div class="in">
+			<div class="textThis">
+				<h2>服务器内部发生错误啦</h2>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>

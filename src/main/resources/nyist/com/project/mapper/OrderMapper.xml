@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="nyist.com.project.mapper.OrderMapper" >
+  
+  <resultMap id="BaseResult" type="nyist.com.project.entity.Order" >
+    <id column="id" property="id"  />
+    <result column="rid" property="rid" />
+    <result column="oid" property="oid" />
+    <result column="price" property="price" />
+    <result column="username" property="username" />
+    <result column="phone" property="phone" />
+    <result column="paytype" property="paytype" />
+     <result column="idnumber" property="idnumber" />
+  </resultMap>
+  
+  
+  <select id="selectAllOrder" resultType="nyist.com.project.entity.Order" parameterType="order">
+  	select o.id,o.oid,r.name as rid,o.price,o.create_time,o.username,o.phone,o.paytype,o.idnumber 
+  	from sys_order o left join sys_room r on o.rid = r.id 
+  	<where>
+  		<if test="order.oid!=null and order.oid!=''">
+  			and o.oid=#{order.oid}
+  		</if>
+  		<if test="order.username!=null and order.username!=''">
+  			and o.username like concat('%',#{order.username},'%')
+  		</if>
+  		<if test="order.idnumber!=null and order.idnumber!=''">
+  			and o.idnumber=#{order.idnumber}
+  		</if>
+  		<if test="order.createTime!=null and order.createTime!=''">
+  			and o.create_time>=#{order.createTime}
+  		</if>
+  	</where>
+  	order by o.id desc
+  </select>
+</mapper>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+   	
+   	    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+       <style type="text/css">
+       .el-input {
+		    position: relative;
+		    font-size: 14px;
+		    display: inline-block;
+		    width: 15%;
+		}
+       </style>
+</head>
+
+<body >
+  <div id="app">
+	    <el-row>
+	    	<shiro:hasPermission name="sys:user:add">
+		  <vxe-button icon="fa fa-plus" circle title="添加"></vxe-button>
+		  </shiro:hasPermission>
+		  <el-input v-model="searchName" placeholder="请输入内容"></el-input>
+		</el-row>
+
+ 	   <template>
+		  <el-table
+		    :data="data"
+		    border
+		    style="width: 100%">
+		 
+		    <el-table-column
+		      prop="id"
+		      label="ID"
+		      width="200">
+		    </el-table-column>
+		   
+		    <el-table-column
+		      prop="account"
+		      label="账户名"
+		      width="200">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="realName"
+		      label="真实名称"
+		      width="200">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="profile"
+		      label="头像"
+		      width="180">
+		      <template slot-scope="scope">
+			    <img  :src="scope.row.profile==null?'https://dss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=2174382199,1080607098&fm=26&gp=0.jpg':scope.row.profile" width="40" height="40" />
+			　</template>
+		    </el-table-column>
+		   
+		    <el-table-column
+		      fixed="right"
+		      label="操作"
+		      width="500">
+		      <template slot-scope="scope">
+		      <shiro:hasPermission name="sys:user:view">
+		      	<el-button icon="el-icon-search" circle @click=personMsg(scope.row) title="查看"></el-button>
+		      </shiro:hasPermission>
+		       <shiro:hasPermission name="sys:user:edit">
+		       	<el-button type="primary" icon="el-icon-edit" circle  @click=rePWd(scope.row)  title="重置密码"></el-button>
+		      </shiro:hasPermission>
+		       <shiro:hasPermission name="sys:user:allote">
+		       	<el-button type="success" icon="el-icon-setting" circle @click=roleAllocate(scope.row) title="角色分配"></el-button>
+		      </shiro:hasPermission>
+		       <shiro:hasPermission name="sys:user:del">
+		       	<el-button type="danger" icon="el-icon-delete" circle @click=deluser(scope.row) title="删除"></el-button>
+		      </shiro:hasPermission>
+		      </template>
+		    </el-table-column>
+		  </el-table>
+		</template>
+		
+		<div class="pagination">
+		  <el-pagination
+		    background
+		    layout="total,prev,pager,next"
+		    :current-page="currentPage"
+		    :page-size="pageSize"
+		    :total="tableData.length"
+		  	@current-change="handleCurrentChange">
+		  </el-pagination>
+		  </div>
+		
+		<!-- 角色分配dialog -->
+		<el-dialog
+		  title="角色选择"
+		  :visible.sync="roleDialogVisible"
+		  width="60%">
+			<el-checkbox-group v-model="callList">
+			  <el-checkbox v-for="role in roleList" :label="role.id" :key="role.id">{{role.name}}</el-checkbox>
+			</el-checkbox-group>
+		   	
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="roleDialogVisible = false">取 消</el-button>
+		    <el-button type="primary" @click="ensureRoleAllocate">确 定</el-button>
+		  </span>
+		</el-dialog>
+		
+		<el-drawer
+		  title="个人信息"
+		  :visible.sync="drawer"
+		  :with-header="false">
+		  <el-form :label-position="labelPosition" label-width="80px" :model="formLabelAlign">
+		  <el-form-item label="账号">
+		   		<span>{{formLabelAlign.account}}</span>
+		  </el-form-item>
+		  <el-form-item label="真实名称">
+		    <span>{{formLabelAlign.realName}}</span>
+		  </el-form-item>
+		  <el-form-item label="用户头像">
+		    <div class="demo-basic--circle">
+		        <div class="block"><el-avatar shape="square" :size="50" :src="formLabelAlign.profile"></el-avatar></div>
+		    </div>
+		  </el-form-item>
+		</el-form>
+		</el-drawer>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app',
+  data: {
+    message: 'Hello Vue!',
+    loading: true,
+    insertDialogVisible: false,
+    roleDialogVisible:false,
+   	tableData:[],
+    tempData: [],
+   	userId:'',
+   	roleList:[], //所有角色列表
+   	callList:[], //用户角色列表
+   	searchName:'',
+   	pageSize: 5,    //分页每页大小
+    currentPage: 1,  //当前页
+    drawer: false,
+    labelPosition:'left',
+    formLabelAlign:{//查看用户信息显示
+    }
+  },
+  methods:{
+	  personMsg(row){
+		  console.log(row)
+		  this.drawer= true
+		  this.formLabelAlign = row;
+	  },
+	  initMenu(){
+		  axios.get('/back/sys/user/getSysUser')
+		  .then(res=>{
+			  this.tableData = res.data.data;
+			  this.tempData=res.data.data;
+			  this.loading=false;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  handleCurrentChange(val){
+		  this.currentPage = val
+	  },
+	  selectChangeEvent ({ records }) { //获取选中的数据
+          console.info(records)
+      },
+      insertMenu(){
+    	   alert(1);
+      },
+      roleAllocate(row){
+   	   this.roleDialogVisible=true;
+   	   this.userId = row.id;
+   	   axios.get('/back/sys/user/roleList?userId='+row.id)
+ 		  .then(res=>{
+ 			  this.roleList=res.data.data.roleList;
+ 			  var callData = res.data.data.callList;
+ 			  var arr='';
+ 			  for(let i=0;i<callData.length;i++){
+ 				arr=arr+callData[i].roleId+',';
+ 			  }
+ 			  arr=arr.substring(0,arr.length-1)
+ 			  arr='['+arr+']';
+ 			  this.callList = JSON.parse(arr);//直接使用arr 会当成字符串，不会生效
+ 		}).catch(error=>{
+ 			console.log(error);
+ 		})
+      },
+      rePWd(row){
+    	  this.$confirm('确定要重置该用户密码?', '提示', {
+	          confirmButtonText: '确定',
+	          cancelButtonText: '取消',
+	          type: 'warning'
+	        }).then(() => {
+	        	axios.get('/back/sys/user/rePWd/'+row.id)
+		  		  .then(res=>{
+		  			this.$message(res.data.msg);
+		  		}).catch(error=>{
+		  		})
+	        }).catch(() => {
+	        });
+      },
+      deluser(row){
+    	  this.$confirm('删除后不可恢复，确认要执行吗？', '提示', {
+	          confirmButtonText: '确定',
+	          cancelButtonText: '取消',
+	          type: 'warning'
+	        }).then(() => {
+	        	axios.get('/back/sys/user/delById/'+row.id)
+		  		  .then(res=>{
+		  			this.$message(res.data.msg);
+		  		}).catch(error=>{
+		  		})
+	        }).catch(() => {
+	        });
+      },
+      ensureRoleAllocate(){
+   	   let roleIds = this.callList.join(",");
+   	   let userId = this.userId;
+   	   axios.get('/back/sys/user/roleAllocate?userId='+userId+'&roleIds='+roleIds)
+  		  .then(res=>{
+  			if(res.data.code==200){
+				 this.$notify({
+			          title: '角色修改成功',
+			          message: res.data.msg,
+			          type: 'success'
+			        });
+			 }else{
+				 this.$notify({
+			          title: '角色修改失败',
+			          message: res.data.msg,
+			          type: 'error'
+			        });
+			 }
+  			this.roleDialogVisible =false;
+  		}).catch(error=>{
+  			this.$notify({
+		          title: '错误',
+		          message: '请求失败',
+		          type: 'error'
+		        });
+  		})
+      }
+  },
+  created(){
+	  this.initMenu();
+  },
+  computed: {
+	  //计算当前搜索结果表里的数据
+	  data () {
+	    return this.tableData.slice((this.currentPage - 1) * this.pageSize, this.currentPage * this.pageSize)
+	  }
+  },
+  watch: {
+	  //搜索框里面的内容发生变化的时候，搜索结果table列表的内容跟着它的内容发生变化
+	  searchName: function () {
+	    if (this.searchName == '') {
+	      this.tableData = this.tempData
+	    } else {
+	      this.tableData = []
+	      for (let item of this.tempData) {
+	        if (item.account.includes(this.searchName)) {
+	          this.tableData.push(item)
+	        }
+	      }
+	    }
+	  }
+	}
+
+})
+</script>
+</html>

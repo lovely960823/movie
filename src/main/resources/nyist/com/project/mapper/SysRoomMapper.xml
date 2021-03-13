@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="nyist.com.project.mapper.SysRoomMapper" >
+  
+  <resultMap id="BaseResult" type="nyist.com.project.entity.SysRoom" >
+    <id column="id" property="id"  />
+    <result column="name" property="name" />
+    <result column="type" property="type" />
+    <result column="price" property="price" />
+    <result column="profile" property="profile" />
+    <result column="descri" property="descri" />
+    <result column="status" property="status" />
+  </resultMap>
+  
+  
+  <select id="selectAllRooms" resultType="nyist.com.project.entity.SysRoom" parameterType="sysRoom">
+  	select * from sys_room 
+  	<where>
+  		<if test="sysRoom.name!=null and sysRoom.name!=''">
+  			and sys_room.name like concat('%',#{sysRoom.name},'%')
+  		</if>
+  		<if test="sysRoom.type!=null and sysRoom.type!=''">
+  			and sys_room.type=#{sysRoom.type}
+  		</if>
+  		<if test="sysRoom.status!=null and sysRoom.status!=''">
+  			and sys_room.status =#{sysRoom.status}
+  		</if>
+  	</where>
+  	order by find_in_set(status,'1,2,3'),FIND_IN_SET(type,'min,middle,max')
+  </select>
+</mapper>

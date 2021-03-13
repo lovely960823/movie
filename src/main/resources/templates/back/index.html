@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+    <link rel="stylesheet" href="/static/layui/layui-v2.5.6/layui/css/layui.css">
+
+
+       <style type="text/css">
+       	.layui-nav {
+		    position: relative;
+		    padding: 0 20px;
+		    background-color: #9aa4c3;
+		    color: #fff;
+		    border-radius: 2px;
+		    font-size: 0;
+		    box-sizing: border-box;
+		    height: 50px;
+		}
+		.xiala{
+			position: fixed;
+		    top: 1px;
+		    z-index: 20000;
+		    right: 0;
+		}
+		.navbar-fixed-top, .navbar-static-top {
+		    background: #fff;
+		    /* box-shadow: 0 2px 2px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(0, 0, 0, 0.05); */
+		}
+		.layui-layer-setwin .layui-layer-close1{
+			background-color: black;
+		}
+       </style>
+</head>
+
+<body class="fixed-sidebar full-height-layout gray-bg" style="overflow:hidden">
+    <div id="wrapper">
+        <!--左侧导航开始-->
+        <nav class="navbar-default navbar-static-side" role="navigation">
+            <div class="nav-close"><i class="fa fa-times-circle"></i>
+            </div>
+            <div class="sidebar-collapse">
+                <ul class="nav" id="side-menu">
+                    <li class="nav-header">
+                        <div class="dropdown profile-element">
+                            <a data-toggle="dropdown" class="dropdown-toggle" href="#">
+                                <span class="clear">
+                                    <span class="block m-t-xs" style="font-size:20px;">
+                                        <i class="fa fa-area-chart"></i>
+                                        <strong class="font-bold">后台 </strong>
+                                    </span>
+                                </span>
+                            </a>
+                        </div>
+                        <div class="logo-element">后台管理
+                        </div>
+                    </li>
+               <!--  <shiro:hasRole name="ljw">
+                	刘建伟最帅
+                </shiro:hasRole> -->
+                    
+                   <!--  
+                   	实例使用
+                   	<li>
+                        <a href="#">
+                            <i class="fa fa fa-bar-chart-o"></i>
+                            <span class="nav-label">统计图表</span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                            <li>
+                                <a class="J_menuItem" href="graph_echarts.html">百度ECharts</a>
+                            </li>
+                            <li>
+                                <a class="J_menuItem" href="graph_flot.html">Flot</a>
+                            </li>
+                        </ul>
+                    </li> -->
+                    
+                    
+                        
+                  <!--  
+                  	这个会自动展开，而且合不上，所以放弃使用了 
+                  	<li v-for="(item, index) in menuData" v-if="item.level==1" >
+                     	<a href="#">
+                            <i class="fa fa fa-bar-chart-o"></i>
+                            <span class="nav-label">{{ item.name }}</span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                        	 <li v-for="(item1, index) in menuData" v-if="item.id==item1.pid">
+                                <a class="J_menuItem" :href="item1.url" >{{item1.name}}</a>
+                            </li>
+                        </ul>
+                    </li> -->
+                    
+                    <li th:each="menu: ${menuList}" th:if="${menu.level} eq 1">
+                        <a href="#">
+                            <!-- <i class="fa fa fa-bar-chart-o"></i> -->
+                            <span class="nav-label" th:utext="'<i class=\''+${menu.icon}+'\'></i>'+${menu.name}"></span>
+                            <span class="fa arrow"></span>
+                        </a>
+                        <ul class="nav nav-second-level">
+                            <li th:each="menu1: ${menuList}" th:if="${menu.id} eq ${menu1.pid}">
+                            	<!-- <a class="J_menuItem" th:href="@{${menu1.url}}" th:text="${menu1.name}"></a> -->
+                                <a class="J_menuItem" th:href="@{${menu1.url}}" th:utext="'<i class=\''+${menu1.icon}+'\'></i>'+${menu1.name}"></a>
+                            </li>
+                        </ul>
+                    </li>
+                
+                </ul>
+            </div>
+        </nav>
+        <!--左侧导航结束-->
+        <!--右侧部分开始-->
+        <div id="page-wrapper" class="gray-bg dashbard-1">
+            <div class="row border-bottom">
+                <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                    <div class="navbar-header" style="text-align: center;color: green">
+                      		<h1> 欢迎来到私人影院管理系统</h1>
+                    </div>
+                </nav>
+            </div>
+            <div class="xiala">
+            	<ul class="navbar-right layui-nav">
+				      <li class="layui-nav-item" >
+					    <a href="javascript:;" th:text="${session.loginUser.account}"></a>
+					    <dl class="layui-nav-child">
+					      <dd><a href="javascript:;" onclick="changePWd()">修改密码</a></dd>
+					      <dd><a href="/logout">退出</a></dd>
+					    </dl>
+					  </li>
+				   </ul>
+            </div>
+            <div class="row J_mainContent" id="content-main">
+                <iframe id="J_iframe" width="100%" height="100%" src="/back/index_v1" frameborder="0" data-id="index_v1.html" seamless></iframe>
+            </div>
+        </div>
+        <!--右侧部分结束-->
+    </div>
+
+    <!-- 全局js -->
+    
+    <script src="/static/back/js/bootstrap.min.js?v=3.3.6"></script>
+    <script src="/static/back/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+    <script src="/static/back/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+    <script src="/static/back/js/plugins/layer/layer.min.js"></script>
+    <script src="/static/layui/layui-v2.5.6/layui/layui.all.js" charset="utf-8"></script>
+    <!-- 自定义js -->
+    <script src="/static/back/js/hAdmin.js?v=4.1.0"></script>
+    <script type="text/javascript" src="/static/back/js/index.js"></script>
+    <!-- 第三方插件 -->
+    <script src="/static/back/js/plugins/pace/pace.min.js"></script>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+/* var app = new Vue({
+  el: '#wrapper',
+  data: {
+    message: 'Hello Vue!',
+   	menuData:[],
+   	sites: [
+   	      { name: 'Runoob' },
+   	      { name: 'Google' },
+   	      { name: 'Taobao' }
+   	    ]
+  },
+  methods:{
+	  initMenu(){
+		  axios.get('/back/sysmenu')
+		  .then(res=>{
+			  this.menuData = res.data.data;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  }
+  },
+  created(){
+	  this.initMenu();
+  }
+}) */
+
+layui.use('element', function(){
+	  var element = layui.element; //导航的hover效果、二级菜单等功能，需要依赖element模块
+	  
+	  //监听导航点击
+	  element.on('nav(demo)', function(elem){
+	    //console.log(elem)
+	    layer.msg(elem.text());
+	  });
+	});
+	
+function changePWd(){
+	layer.open({
+		  title:'修改密码',
+		  type: 1,
+		  closeBtn: 1,
+		  skin: 'layui-layer-rim', //加上边框
+		  area: ['420px', '240px'], //宽高
+		  content: '暂未开发！！！'
+		});
+}	
+</script>
+
+</html>

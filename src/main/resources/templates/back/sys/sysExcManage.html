@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+   	
+   	    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app1">
+ 	  <template>
+ 	  <el-row>
+		
+ 	  	<el-form ref="form" :model="form" >
+ 	  		<el-form-item label="操作时间">
+			    <el-col :span="1">
+			      <el-date-picker type="date" placeholder="选择日期" v-model="form.beginDate" style="width: 150px;"></el-date-picker>
+			    </el-col>
+			    <el-col class="line" :span="1">-</el-col>
+			    <el-col :span="1">
+			      <el-date-picker type="date" placeholder="选择日期" v-model="form.endDate" style="width: 150px;"></el-date-picker>
+			    </el-col>
+			 </el-form-item>
+			 <el-button @click="initLogList">查询</el-button>  
+ 	  	</el-form>
+ 	  </el-row>
+		  <el-table
+		    :data="tableData"
+		    border
+		    style="width: 100%">
+		 
+		    <el-table-column
+		      prop="id"
+		      label="ID"
+		      width="50">
+		    </el-table-column>
+		   
+		    <el-table-column
+		      prop="name"
+		      label="异常名称"
+		      width="100">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="message"
+		      label="异常信息"
+		      width="120">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="userName"
+		      label="操作人"
+		      width="220">
+		    </el-table-column>
+		    
+		     <el-table-column
+		      prop="method"
+		      label="操作方法"
+		      width="400">
+		    </el-table-column>
+		    
+		     <el-table-column
+		      prop="params"
+		      label="请求参数"
+		      width="300">
+		    </el-table-column>
+		    
+		     <el-table-column
+		      prop="ip"
+		      label="操作ip"
+		      width="150">
+		    </el-table-column>
+		    
+		     <el-table-column
+		      prop="createTime"
+		      label="操作时间"
+		      width="200">
+		    </el-table-column>
+		   
+		  </el-table>
+		  
+		    <el-pagination
+		      @size-change="sizeChangeHandle"
+		      @current-change="currentChangeHandle"
+		      :current-page="pageIndex"
+		      :page-sizes="[10, 20, 50, 100]"
+		      :page-size="pageSize"
+		      :total="totals"
+		      layout="total, sizes, prev, pager, next, jumper"
+		    ></el-pagination>
+		</template>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app1',
+  data: {
+    message: 'Hello Vue!',
+    loading: true,
+   	tableData:[],
+   	form: {
+        pageSize:10,
+        pageNum:1,
+        operModule:'',
+        beginDate:'',
+        endDate:''
+      },
+    totals:1,   //默认设置为1
+    pageIndex:1,//默认设置为1
+    pageSize:1  //默认设置为1
+  },
+  methods:{
+	  initLogList(){
+		  axios.post('/back/sys/log/excLog',this.form)
+		  .then(res=>{
+			  this.tableData = res.data.data.list;
+			  this.totals=res.data.data.total;
+			  this.loading=false;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  currentChangeHandle(val){ //跳转页
+	      this.form.pageNum=val;
+	      this.initLogList();
+	  },
+	  sizeChangeHandle(val){//选择每页数据的
+	      this.form.pageSize=val;
+	      this.initLogList();
+	  }
+  },
+  created(){
+	  this.initLogList();
+  }
+})
+</script>
+
+</html>

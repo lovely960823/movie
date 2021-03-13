@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> 
+   	    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app">
+	    <el-form :inline="true" :model="formInline" class="demo-form-inline">
+		  <el-form-item label="房间号">
+		    <el-input v-model="formInline.name" placeholder="房间号"></el-input>
+		  </el-form-item>
+		  <el-form-item label="房间类型">
+		    <el-select v-model="formInline.type" placeholder="房间类型">
+		    	<el-option label="全部类型" value=""></el-option>
+		      <el-option label="小房间" value="min"></el-option>
+		      <el-option label="中房间" value="middle"></el-option>
+		      <el-option label="大房间" value="max"></el-option>
+		    </el-select>
+		  </el-form-item>
+		  
+		   <el-form-item label="房间状态">
+		    <el-select v-model="formInline.status" placeholder="房间状态">
+		      <el-option label="全部类型" value=""></el-option>
+		      <el-option label="空闲中" value="1"></el-option>
+		      <el-option label="使用中" value="2"></el-option>
+		    </el-select>
+		  </el-form-item>
+		  <el-form-item>
+		  	 <shiro:hasPermission name="hotel:room:select">
+		    <el-button type="primary" @click="initData" >查询</el-button>
+		    </shiro:hasPermission>
+		  </el-form-item>
+		  
+		  <el-form-item>
+		  	 <shiro:hasPermission name="hotel:room:add">
+		    <el-button @click="addPage" >新增</el-button>
+		    </shiro:hasPermission>
+		  </el-form-item>
+		</el-form>
+		
+		<template>
+		  <el-table
+		    :data="tableData"
+		    border
+		    style="width: 100%">
+		    <el-table-column
+		      prop="name"
+		      label="房间号"
+		      width="200">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="type"
+		      label="类型"
+		      width="150">
+		      <template slot-scope="scope">
+	               <p v-if="scope.row.type=='min'">小房间</p>
+                    <p v-if="scope.row.type=='middle'">中房间</p>
+                    <p v-if="scope.row.type=='max'">大房间</p>             
+            </template>
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="price"
+		      label="价格"
+		      width="150">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="profile"
+		      label="图片"
+		      width="300">
+		      <template slot-scope="scope">
+			    <img  :src="scope.row.profile==null?'https://dss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=2174382199,1080607098&fm=26&gp=0.jpg':'http://localhost:80/'+scope.row.profile" width="40" height="40" />
+			　</template>
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="status"
+		      label="房间状态"
+		      width="300">
+		      <template slot-scope="scope">
+			      <p v-if="scope.row.status=='1'">空闲</p>
+	              <p v-if="scope.row.status=='2'">使用中</p>
+	              <p v-if="scope.row.status=='3'">维修中</p>
+              </template>         
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="descri"
+		      label="房间简述"
+		      width="300">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      fixed="right"
+		      label="操作"
+		      width="300">
+		      <template slot-scope="scope">
+		      <shiro:hasPermission name="hotel:room:update">  
+		        <el-button type="text" size="small" @click="edit(scope.row)">编辑</el-button>
+		       </shiro:hasPermission> 
+		       <shiro:hasPermission name="hotel:room:del">
+		        <el-button @click="del(scope.row)" type="text" size="small" >删除</el-button>
+		      </shiro:hasPermission>
+		      
+		      <shiro:hasPermission name="hotel:room:upload">  
+		      <el-button>
+	            <el-upload
+	              class="upload-demo"
+	              :action="getAction()"
+	              multiple
+	              :limit="3"
+	              :on-success="uploadSuccess"
+	              :on-error="uploadFail"
+	              :file-list="fileList">
+	              <el-button size="small" type="primary"  @click="getRow(scope.row)">点击上传</el-button>
+	            </el-upload>
+	          </el-button>
+	          </shiro:hasPermission>
+		      </template>
+		    </el-table-column>
+		  </el-table>
+		  
+		  <el-pagination
+		      @size-change="sizeChangeHandle"
+		      @current-change="currentChangeHandle"
+		      :current-page="pageIndex"
+		      :page-sizes="[10, 20, 50, 100]"
+		      :page-size="pageSize"
+		      :total="totals"
+		      layout="total, sizes, prev, pager, next, jumper"
+		    ></el-pagination>
+		    
+		    <el-dialog
+			  title="房间管理"
+			  :visible.sync="dialogVisible"
+			  width="30%">
+			<el-form :label-position="labelPosition" label-width="80px" :model="form" :rules="rules" ref="form" >
+			  <el-form-item label="房间名称" prop="name"> 
+			    <el-input v-model="form.name" v-bind:disabled="disabled" ></el-input>
+			  </el-form-item>
+			  <el-form-item label="房间类型" >
+			      <el-select v-model="form.type" placeholder="房间类型">
+			        <el-option label="小房间" value="min"></el-option>
+			        <el-option label="中房间" value="middle"></el-option>
+			        <el-option label="大房间" value="max"></el-option>
+			      </el-select>
+			    </el-form-item>
+			    
+			    <el-form-item label="房间状态" >
+			      <el-select v-model="form.status" placeholder="房间状态">
+			        <el-option label="空闲中" value="1"></el-option>
+			        <el-option label="使用中" value="2"></el-option>
+			        <el-option label="维修中" value="3"></el-option>
+			      </el-select>
+			    </el-form-item>
+			   
+			   <el-form-item label="房间价格" prop="price">
+			      <el-input v-model="form.price" autocomplete="off"></el-input>
+			    </el-form-item> 
+			  <el-form-item label="简单描述" prop="descri">
+			    <el-input v-model="form.descri"></el-input>
+			  </el-form-item>
+			</el-form>
+			  
+			  <span slot="footer" class="dialog-footer">
+			    <el-button @click="dialogVisible = false">取 消</el-button>
+			    <el-button type="primary" @click="add('form')">确 定</el-button>
+			  </span>
+			</el-dialog>
+		</template>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+ const isNum = (rule, value, callback) => {
+      const age= /^[0-9]*$/
+      if (!age.test(value)) {
+        callback(new Error('价格只能为数字'))
+      }else{
+        callback()
+      }
+    }
+var app = new Vue({
+  el: '#app',
+  data: {
+	  labelPosition: 'right',
+	  formInline: {
+         name: '',
+         type: '',
+         status:'',
+         pageSize:10,
+         pageNum:1,
+	   },
+	   rules:{
+		 name:[{ required: true, message: '请输入房间名称', trigger: 'blur' }] ,
+		 price:[{ required: true, message: '请输入房间价格', trigger: 'blur' },{ validator: isNum, trigger: 'blur' }] ,
+		 descri:[{ required: true, message: '请输入房间简单描述', trigger: 'blur' }] ,
+	   },
+	   totals:1,   //默认设置为1
+	   pageIndex:1,//默认设置为1
+	   pageSize:1,  //默认设置为1
+	   tableData: [],
+	   dialogVisible: false,
+	   disabled:false,
+	   form:{},
+	   uploadId:"", //上传文件指定id
+	   fileList:[]
+  },
+  methods:{
+	  initData(){
+		  axios.post('/back/hotel/room/roomManage',this.formInline)
+		  .then(res=>{
+			  this.tableData = res.data.data.list;
+			  this.totals=res.data.data.total;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  addPage(){
+		  this.disabled=false;
+		  this.dialogVisible=true;
+		  this.form={
+			   name:'',
+			   type:'min',
+			   price:'',
+			   descri:'',
+			   status:'1'
+		   }
+	  },
+	  currentChangeHandle(val){ //跳转页
+	      this.formInline.pageNum=val;
+	      this.initData();
+	  },
+	  sizeChangeHandle(val){//选择每页数据的
+	      this.formInline.pageSize=val;
+	      this.initData();
+	  },
+	  add(formName){
+		  this.$refs[formName].validate((valid) => {
+	          if (valid) {
+	        	  axios.post('/back/hotel/room/roomAdd',this.form)
+	    		  .then(res=>{
+	    			  if(res.data.code==200){
+	    				  this.$message({
+	    			          message: res.data.msg,
+	    			          type: 'success'
+	    			        });
+	    				  this.dialogVisible=false;
+	    				  this.initData();
+	    			  }else{
+	    				  this.$message({
+	    			          message: res.data.msg,
+	    			          type: 'error'
+	    			        });
+	    			  }
+	    		}).catch(error=>{
+	    			console.log(error);
+	    		})
+	          } else {
+	            console.log('error submit!!');
+	            return false;
+	          }
+	        });
+		  
+		  
+		   
+	  },
+	  edit(row){
+		  this.dialogVisible=true;
+		  this.disabled=true;
+		  this.form = row;
+	  },
+	  del(row){
+		  this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+	          confirmButtonText: '确定',
+	          cancelButtonText: '取消',
+	          type: 'warning'
+	        }).then(() => {
+	        	axios.get('/back/hotel/room/delById/'+row.id)
+		  		  .then(res=>{
+		  			this.$message(res.data.msg);
+		  			this.initData();
+		  		}).catch(error=>{
+		  		})
+	        }).catch(() => {
+	        });
+	  },
+	  uploadSuccess(){ //文件上传成功提示
+	      this.$message({
+	        type: 'info',
+	        message: '上传成功'
+	      });
+	      this.initData();
+	      this.fileList=[];
+	    },
+	    uploadFail(){ //文件上传失败提示
+	      this.$message({
+	        type: 'info',
+	        message: '上传失败'
+	      });
+	    },
+	    getRow(row){ //点击上传的时候获取当前对象id
+	    	console.log(row);
+	      this.uploadId = row.id;
+	    },
+	    getAction(){ //重新给上传文件的action赋值
+	      return "/back/hotel/room/uploadFile?id="+this.uploadId;
+	    }
+  },
+  created(){
+	  this.initData();
+  },
+
+})
+</script>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+    <link rel="shortcut icon" href="favicon.ico"> <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+  
+  	    <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+	
+    <!-- vxe-table-->
+       <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+       <script src="/static/vue/vxe-table/xe-utils.js"></script>
+       <script src="/static/vue/vxe-table/vxe-table.js"></script>
+       <!-- 请求 -->
+       <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app">
+    <shiro:hasPermission name="sys:role:add">
+		<el-button  title="添加" @click="addRoleDialogVisible=true">添加</el-button>
+	</shiro:hasPermission>  
+ 	  <template>
+		  <el-table
+		    :data="tableData"
+		    border
+		    style="width: 100%">
+		 
+		    <el-table-column
+		      prop="id"
+		      label="ID"
+		      width="200">
+		    </el-table-column>
+		   
+		    <el-table-column
+		      prop="name"
+		      label="名称"
+		      width="500">
+		    </el-table-column>
+		   
+		    <el-table-column
+		      fixed="right"
+		      label="操作"
+		      width="500">
+		      <template slot-scope="scope">
+		      	<shiro:hasPermission name="sys:role:del">
+			        <el-button type="danger" icon="el-icon-delete" circle @click="delRole(scope.row)" title="删除"></el-button>
+		      	</shiro:hasPermission>
+		      	<shiro:hasPermission name="sys:role:allote">
+			        <el-button type="info" icon="el-icon-setting"  @click="allocatePerms(scope.row)" title="权限分配"></el-button>
+		      	</shiro:hasPermission>
+		      </template>
+		    </el-table-column>
+		  </el-table>
+		</template>
+		
+		<!-- 权限分配dialog -->
+		<el-dialog
+		  title="权限分配"
+		  :visible.sync="permDialogVisible"
+		  width="60%"
+		  :before-close="permHandleClose">
+		   <el-tree
+			  :data="treeData"
+			  show-checkbox
+			  default-expand-all
+			  node-key="id"
+			  ref="tree"
+			  :check-strictly="isCheck"
+			  highlight-current
+			  :props="defaultProps">
+			</el-tree>
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="cancelAllocate">取 消</el-button>
+		    <el-button type="primary" @click="ensureAllocate">确 定</el-button>
+		  </span>
+		</el-dialog>
+		
+		<el-dialog
+		  title="角色新建"
+		  :visible.sync="addRoleDialogVisible"
+		  width="30%">
+		  <el-form ref="form" :model="form" label-width="80px" :rules="rules">
+			  <el-form-item label="角色名称">
+			    <el-input v-model="form.name"></el-input>
+			  </el-form-item>
+			</el-form>
+		  
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="addRoleDialogVisible = false">取 消</el-button>
+		    <el-button type="primary" @click="addRole">确 定</el-button>
+		  </span>
+		</el-dialog>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app',
+  data: {
+    message: 'Hello Vue!',
+    loading: true,
+    permDialogVisible:false,
+    addRoleDialogVisible:false,
+   	tableData:[],
+   	isCheck:true,
+   	form: {
+        name: ''
+      },
+     rules:{
+         name:[
+           { required: true, message: '请输入角色名称', trigger: 'blur' }
+         ]
+ 	 },      
+	treeData:[],  //树数据
+	defaultProps: {
+        children: 'childs',
+        label: 'name'
+      },
+      roleId:'' //角色id
+  },
+  methods:{
+	  initRoleList(){
+		  axios.get('/back/sys/role/getSysRole')
+		  .then(res=>{
+			  this.tableData = res.data.data;
+			  this.loading=false;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  delRole(row){ //角色删除
+	  this.$confirm('确认要删除该条信息吗?', '提示', {
+   	        confirmButtonText: '确定',
+   	        cancelButtonText: '取消',
+   	        type: 'warning'
+   	      }).then(() => {
+   	    	axios.get('/back/sys/role/roleDel?roleId='+row.id)
+	  		  .then(res=>{
+	  			  if(res.data.code==200){
+ 					 this.$notify({
+ 				          title: '删除成功',
+ 				          message: res.data.msg,
+ 				          type: 'success'
+ 				        });
+ 					this.initRoleList();
+ 				 }else{
+ 					 this.$notify({
+ 				          title: '删除失败',
+ 				          message: res.data.msg,
+ 				          type: 'success'
+ 				        });
+ 				 }
+  		}).catch(error=>{
+  			console.log(error);
+  		})
+   	      }).catch(() => {
+   	        this.$message({
+   	          type: 'info',
+   	          message: '已取消删除'
+   	        });
+   	      }); 
+	  },
+      allocatePerms(row){ //角色分配权限页面
+   	   this.roleId = row.id;
+   	   this.permDialogVisible=true;
+   	   axios.get('/back/sys/role/getRoleMenu?roleId='+row.id)
+		  .then(res=>{
+			  this.treeData = res.data.data.menuList;//树节点数据
+			  var treeCallData = res.data.data.callList;//回显数据
+			  var callIds = new Array();
+			  for(let i=0;i<treeCallData.length;i++){
+				 callIds.push(treeCallData[i].menuId);
+			  }
+			  //根据节点id回显  回显数据时有一个父节点数据下面子节点都会被选中
+			 /*  this.$refs.tree.setCheckedKeys(callIds);
+			  this.$refs.tree.setCheckedKeys([1,3]); */
+			  //设置:check-strictly="isCheck" 重点：给数节点赋值之前 先设置为true
+		      this.$nextTick(() => {
+		        this.$refs.tree.setCheckedKeys(callIds); //给树节点赋值
+		        this.isCheck= false; //重点： 赋值完成后 设置为false
+		  	})
+			  this.loading=false;
+		}).catch(error=>{
+			console.log(error);
+		})
+      },
+      cancelAllocate(){
+   	   this.permDialogVisible=false;
+   	   window.location.reload();//解决取消后再点击所有数据都被勾选问题
+      },
+      ensureAllocate(){
+      	 //勾选子节点的时候，父节点显示被半勾选，没有参数// https://blog.csdn.net/qq_29540337/article/details/105067149
+    	 let checked=this.$refs.tree.getCheckedKeys();//手动勾选的
+      	 let parent = this.$refs.tree.getHalfCheckedKeys();//
+      	 let menuIds = checked.concat(parent).join(",");
+        axios.post('/back/sys/role/allotePerms?roleId='+this.roleId+'&menuIds='+menuIds)
+		  .then(res=>{
+			 if(res.data.code==200){
+				 this.$notify({
+			          title: '成功',
+			          message: res.data.msg,
+			          type: 'success'
+			        });
+			 }else{
+				 this.$notify({
+			          title: '失败',
+			          message: res.data.msg,
+			          type: 'error'
+			        });
+			 }
+		}).catch(error=>{
+			console.log(error);
+		})
+      },
+      permHandleClose(){
+   	   window.location.reload();//解决取消后再点击所有数据都被勾选问题
+      },
+      addRole(){
+    	  if(this.form.name==null||this.form.name==''){
+    		  this.$notify({
+		          title: '失败',
+		          message: "角色名称不能为空",
+		          type: 'error'
+		        });
+    		  return;
+    	  }
+    	  axios.get('/back/sys/role/addRole?name='+this.form.name)
+		  .then(res=>{
+			  if(res.data.code==200){
+					 this.$notify({
+				          title: '成功',
+				          message: "添加成功",
+				          type: 'success'
+				        });
+					 this.initRoleList();
+					 this.addRoleDialogVisible=false
+				 }else{
+					 this.$notify({
+				          title: '失败',
+				          message: res.data.msg,
+				          type: 'error'
+				        });
+				 }
+			 
+		}).catch(error=>{
+			console.log(error);
+		})
+      }
+       
+  },
+  created(){
+	  this.initRoleList();
+  }
+})
+</script>
+
+</html>

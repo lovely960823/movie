@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+
+    <title> hAdmin- 主页</title>
+
+    <meta name="keywords" content="">
+    <meta name="description" content="">
+
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+
+	
+    <link rel="shortcut icon" href="favicon.ico"> 
+    <link href="/static/back/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+    <link href="/static/back/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+    <link href="/static/back/css/animate.css" rel="stylesheet">
+    <link href="/static/back/css/style.css?v=4.1.0" rel="stylesheet">
+    <script src="/static/back/js/jquery.min.js?v=2.1.4"></script>
+    <script src="/static/jquery/jquery.min.js"></script>
+	<script src="/static/front/index/jquery.qrcode.min.js"></script>
+	<script src="/static/layui/layui-v2.5.6/layui/layui.all.js" charset="utf-8"></script>
+   	<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+    <!-- vxe-table-->
+    <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+    <script src="/static/vue/vxe-table/xe-utils.js"></script>
+    <script src="/static/vue/vxe-table/vxe-table.js"></script>
+    <!-- 请求 -->
+    <script src="/static/back/axios/dist/axios.min.js"></script>
+</head>
+
+<body >
+  <div id="app">
+	    <el-form :inline="true" :model="formInline" class="demo-form-inline">
+		  <el-form-item label="房间号">
+		    <el-input v-model="formInline.name" placeholder="房间号"></el-input>
+		  </el-form-item>
+		  <el-form-item label="房间类型">
+		    <el-select v-model="formInline.type" placeholder="房间类型">
+		    	<el-option label="全部类型" value=""></el-option>
+		      <el-option label="小房间" value="min"></el-option>
+		      <el-option label="中房间" value="middle"></el-option>
+		      <el-option label="大房间" value="max"></el-option>
+		    </el-select>
+		  </el-form-item>
+		  <el-form-item>
+		  	 <shiro:hasPermission name="hotel:room:select">
+		    <el-button type="primary" @click="initData" >查询</el-button>
+		    </shiro:hasPermission>
+		  </el-form-item>
+		</el-form>
+		
+		<template>
+		  <el-table
+		    :data="tableData"
+		    border
+		    style="width: 100%">
+		    <el-table-column
+		      prop="name"
+		      label="房间号"
+		      width="150">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="type"
+		      label="类型"
+		      width="150">
+		      <template slot-scope="scope">
+	               <p v-if="scope.row.type=='min'">小房间</p>
+                    <p v-if="scope.row.type=='middle'">中房间</p>
+                    <p v-if="scope.row.type=='max'">大房间</p>             
+            </template>
+		    </el-table-column>
+		    
+		    
+		    <el-table-column
+		      prop="status"
+		      label="房间状态"
+		      width="200">
+		      <template slot-scope="scope">
+			      <p v-if="scope.row.status=='1'">空闲</p>
+	              <p v-if="scope.row.status=='2'">使用中</p>
+              </template>         
+		    </el-table-column>
+		    
+		     <el-table-column
+		      prop="beginTime"
+		      label="开始时间"
+		      width="180">
+		    </el-table-column>
+		    
+		     <el-table-column
+		      prop="endTime"
+		      label="结束时间"
+		      width="180">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="price"
+		      label="价格"
+		      width="100">
+		    </el-table-column>
+		    
+		    <el-table-column
+		      prop="profile"
+		      label="图片"
+		      width="150">
+		      <template slot-scope="scope">
+			    <img  :src="scope.row.profile==null?'https://dss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=2174382199,1080607098&fm=26&gp=0.jpg':scope.row.profile" width="40" height="40" />
+			　</template>
+		    </el-table-column>
+		    
+		    <el-table-column
+		      fixed="right"
+		      label="操作"
+		      width="100">
+		      <template slot-scope="scope">
+		      <shiro:hasPermission name="hotel:room:tuifang">  
+		        <el-button type="text" size="small" @click="tuifang(scope.row)">退房</el-button>
+		       </shiro:hasPermission> 
+		       <shiro:hasPermission name="hotel:room:xuzu">
+		        <el-button @click="xuzu(scope.row)" type="text" size="small" >续租</el-button>
+		      </shiro:hasPermission>
+		      </template>
+		    </el-table-column>
+		    
+		  </el-table>
+		  
+		  <el-pagination
+		      @size-change="sizeChangeHandle"
+		      @current-change="currentChangeHandle"
+		      :current-page="pageIndex"
+		      :page-sizes="[10, 20, 50, 100]"
+		      :page-size="pageSize"
+		      :total="totals"
+		      layout="total, sizes, prev, pager, next, jumper"
+		    ></el-pagination>
+		    
+		    
+		    <el-dialog
+		  title="确认订单"
+		  :visible.sync="dialogVisible"
+		  width="50%">
+		  <el-form :inline="true" :model="xuzuForm" class="demo-form-inline" :label-position="labelPosition">
+			  <el-form-item label="登记人">
+			    <el-input v-model="xuzuForm.username" placeholder="登记人"></el-input>
+			  </el-form-item>
+			  <el-form-item label="联系方式">
+			    <el-input v-model="xuzuForm.phone" placeholder="联系方式"></el-input>
+			  </el-form-item>
+			   <el-form-item label="证件号">
+			    <el-input v-model="xuzuForm.idnumber" placeholder="证件号"></el-input>
+			  </el-form-item>
+			  <el-form-item label="支付方式">
+			    <el-select v-model="xuzuForm.paytype" placeholder="支付方式">
+			      <el-option label="微信" value="wx"></el-option>
+			      <el-option label="支付宝" value="zfb"></el-option>
+			    </el-select>
+			  </el-form-item>
+			  <br>
+		  	  <div class="qrcode" id="qrImage" v-if="qrcode"></div>
+			</el-form>	
+			
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="cancel">取 消</el-button>
+		    <el-button type="primary" @click="makeCode">确 定</el-button>
+		    <el-button type="danger" @click="havePaied">确认支付</el-button>
+		  </span>
+		</el-dialog>
+		</template>
+  </div>
+</body>
+<script type="text/javascript">
+//https://blog.csdn.net/weixin_44771007/article/details/104767981
+var app = new Vue({
+  el: '#app',
+  data: {
+	  labelPosition: 'right',
+	  formInline: {
+         name: '',
+         type: '',
+         pageSize:10,
+         pageNum:1,
+	   },
+	   qrcode:false,
+	   totals:1,   //默认设置为1
+	   pageIndex:1,//默认设置为1
+	   pageSize:1,  //默认设置为1
+	   tableData: [],
+	   dialogVisible: false,
+	   disabled:false,
+	   xuzuForm: {//订单表单
+	          paytype:'wx'
+	        }
+  },
+  methods:{
+	  initData(){
+		  axios.post('/back/hotel/room/usingManage',this.formInline)
+		  .then(res=>{
+			  this.tableData = res.data.data.list;
+			  this.totals=res.data.data.total;
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  currentChangeHandle(val){ //跳转页
+	      this.formInline.pageNum=val;
+	      this.initLogList();
+	  },
+	  sizeChangeHandle(val){//选择每页数据的
+	      this.formInline.pageSize=val;
+	      this.initLogList();
+	  },
+	  cancel(){
+		  this.dialogVisible = false;
+		  this.qrcode=false;
+	  },
+	  tuifang(row){
+		  this.$confirm('确认要进行退房吗?', '提示', {
+	          confirmButtonText: '确定',
+	          cancelButtonText: '取消',
+	          type: 'warning'
+	        }).then(() => {
+	        	axios.get('/back/hotel/room/tfById/'+row.id)
+		  		  .then(res=>{
+		  			this.$message(res.data.msg);
+		  			this.initData();
+		  		}).catch(error=>{
+		  		}) 
+	        }).catch(() => {
+	        });
+	  },
+	  xuzu(row){
+		  	this.qrcode=false;
+		  	this.dialogVisible=true;
+		  	axios.get('/back/hotel/order/getById/'+row.id)
+	  		  .then(res=>{
+	  			this.xuzuForm = res.data.data;
+	  			this.xuzuForm.rid = row.id;
+	  		}).catch(error=>{
+	  		})
+	  },
+	  makeCode(){
+		  this.qrcode=true;
+		  axios.post('/qrCode')
+		  .then(res=>{
+			  if(res.data.code==200){
+				  this.xuzuForm.oid = res.data.data.orderId;
+				  $("#qrImage").qrcode({
+					    width:100,
+					    height:100,
+					    text:res.data.data.code_url,
+					})
+			  }else{
+				  this.$message({
+			          message: res.data.msg,
+			          type: 'error'
+			        });
+			  }
+		}).catch(error=>{
+			console.log(error);
+		})
+	  },
+	  havePaied(){
+		  if(this.xuzuForm.oid==null||this.xuzuForm.oid==''){
+			  this.$message('请先生成订单');
+			  return ;
+		  }
+		  axios.get('/payState/'+this.xuzuForm.oid)
+		  .then(res=>{
+			 if(res.data.code==200){
+				 this.$message({
+			          message: res.data.msg,
+			          type: 'success'
+			        });
+				 //支付成功了，处理订单
+				 this.makeOrder();
+				 this.initData();
+				 this.qrcode=false;
+			 }else{
+				 this.$message({
+			          message: res.data.msg,
+			          type: 'error'
+			        });
+			 }
+			}).catch(error=>{
+				
+			})
+	  },
+	  makeOrder(){
+		  axios.post('/makeOrder',this.xuzuForm)
+		  .then(res=>{
+			  this.formInline={paytype:'wx'};
+			  this.dialogVisible=false;
+		}).catch(error=>{
+		})
+	  }
+  },
+  created(){
+	  this.initData();
+  },
+
+})
+</script>
+</html>

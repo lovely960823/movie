@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="Generator" content="EditPlus®">
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <title>首页</title>
+  <link href="/static/front/index/css/reservation.css" type="text/css" rel="Stylesheet"/>
+  
+  	<script src="/static/jquery/jquery.min.js"></script>
+	<script src="/static/front/index/jquery.qrcode.min.js"></script>
+	<script type="text/javascript" src="/static/front/login/js/login.js" ></script>
+	<script src="/static/layui/layui-v2.5.6/layui/layui.all.js" charset="utf-8"></script>
+	<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+    <script src="/static/vue/vue/dist/vue.js"></script>
+    <!-- elementui-->
+	<link rel="stylesheet" href="/static/vue/element-ui/lib/theme-chalk/index.css">
+	<script src="/static/vue/element-ui/lib/index.js"></script>
+    <!-- vxe-table-->
+    <link rel="stylesheet" href="/static/vue/vxe-table/style.css">
+    <script src="/static/vue/vxe-table/xe-utils.js"></script>
+    <script src="/static/vue/vxe-table/vxe-table.js"></script>
+    <!-- 请求 -->
+    <script src="/static/back/axios/dist/axios.min.js"></script>
+
+</head>
+<body>
+<div id="app">
+<!--头部-->
+<div id="c_header"></div>
+<!--主体内容-->
+<section>
+  <div id="subject">
+     <el-carousel height="260px">
+      <el-carousel-item v-for="item in imgList" :key="item">
+        <img :src="item">
+      </el-carousel-item>
+    </el-carousel>
+  </div>
+
+  <div id="due_menu">
+    <!--关于-->
+    
+    <!--客房-->
+    <div id="guest_rooms">
+      <el-form :inline="true" :model="searchForm" class="demo-form-inline">
+	      <p class="booking_tab" style="margin-top: 0;padding: 0;"><span></span>房间列表
+	      	<el-input v-model="searchForm.searchName"  placeholder="根据房号、价格、描述进行全文检索"></el-input>
+	      </p>
+		  <el-form-item label="房间号">
+		    <el-input v-model="searchForm.name" placeholder="房间号"></el-input>
+		  </el-form-item>
+		  <el-form-item label="房间型号">
+		    <el-select v-model="searchForm.type" placeholder="房间型号">
+		      <el-option label="全部类型" value=""></el-option>
+		      <el-option label="小号房" value="min"></el-option>
+		      <el-option label="中号房" value="middle"></el-option>
+		      <el-option label="大号房" value="max"></el-option>
+		    </el-select>
+		  </el-form-item>
+		  <el-form-item label="房间状态">
+		    <el-select v-model="searchForm.status" placeholder="房间状态">
+		      <el-option label="全部类型" value=""></el-option>
+		      <el-option label="空闲中" value="1"></el-option>
+		      <el-option label="使用中" value="2"></el-option>
+		    </el-select>
+		  </el-form-item>
+		  <el-form-item>
+		    <el-button type="primary" @click="initData">查询</el-button>
+		  </el-form-item>
+		</el-form>
+      
+      <!--列表-->
+      <table id="pro_list" >
+        <thead>
+          <tr>
+            <th width="200px">图片</th>
+            <th>房号</th>
+            <th>房型</th>
+            <th>价格</th>
+            <th>描述</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody >
+	        <tr  v-for="(item,i) in tableData" >
+	          <td>
+	          	<div class="demo-image__preview">
+				  <el-image  
+				  @click="viewPic(item)"
+				    :src="item.profile==null?'/static/front/index/images/room_list_01.jpg':'http://localhost:80/'+item.profile" 
+				    :preview-src-list="srcList">
+				  </el-image>
+				</div>
+	          </td>
+	          <td align="center" v-html="item.name"></td>
+	          <td v-if="item.type=='min'">小号房</td>
+	          <td v-if="item.type=='middle'">中号房</td>
+	          <td v-if="item.type=='max'">大号房</td>
+	          <td v-html="item.price+'￥'"></td>
+	          <td v-html="item.descri"></td>
+	          <td v-if="item.status=='1'"><span style="color:green">空闲中</span></td>
+	          <td v-if="item.status=='2'"><span style="">使用中</span></td>
+	          <td><input type="button" value="预订"  @click="yuding(item)"></td>
+	        </tr>
+        </tbody>
+      </table>
+      
+      <el-pagination
+		      @size-change="sizeChangeHandle"
+		      @current-change="currentChangeHandle"
+		      :current-page="pageIndex"
+		      :page-sizes="[10, 20, 50, 100]"
+		      :page-size="pageSize"
+		      :total="totals"
+		      layout="total, sizes, prev, pager, next, jumper"
+		    ></el-pagination>
+      
+      <el-dialog
+		  title="确认订单"
+		  :visible.sync="dialogVisible"
+		  width="40%">
+		  <el-form :inline="true" :model="formInline" class="demo-form-inline" :label-position="labelPosition">
+			  <el-form-item label="登记人">
+			    <el-input v-model="formInline.username" placeholder="登记人"></el-input>
+			  </el-form-item>
+			  <el-form-item label="联系方式">
+			    <el-input v-model="formInline.phone" placeholder="联系方式"></el-input>
+			  </el-form-item>
+			   <el-form-item label="证件号">
+			    <el-input v-model="formInline.idnumber" placeholder="证件号"></el-input>
+			  </el-form-item>
+			  <el-form-item label="支付方式">
+			    <el-select v-model="formInline.paytype" placeholder="支付方式">
+			      <el-option label="微信" value="wx"></el-option>
+			      <el-option label="支付宝" value="zfb"></el-option>
+			    </el-select>
+			  </el-form-item>
+			  
+			  <br>
+		  	  <div class="qrcode" id="qrImage" v-if="qrcode"></div>
+			</el-form>	
+			
+		  <span slot="footer" class="dialog-footer">
+		    <el-button @click="dialogVisible = false">取 消</el-button>
+		    <el-button type="primary" @click="makeCode">确 定</el-button>
+		    <el-button type="danger" @click="havePaied">确认支付</el-button>
+		  </span>
+		</el-dialog>
+      
+    </div>
+  </div>
+
+</section>
+<!--底部-->
+<div id="c_footer" class="clear">
+	<p style="text-align: center;">
+		  <a href="">首页</a>|
+		  <a href="/toLogin">登录后台</a>
+	</p>
+</div>
+
+</div>
+</body>
+<script type="text/javascript">
+var app = new Vue({
+	  el: '#app',
+	  data: {
+		   imgList:['/static/front/index/images/index_02.jpg','/static/front/index/images/index.jpg','/static/front/index/images/act_07.jpg'],
+		   srcList: [],
+		   tableData: [],//数据表单
+		   totals:1,   //默认设置为1
+		   pageIndex:1,//默认设置为1
+		   pageSize:1,  //默认设置为1
+		   searchForm: { //查询表单
+			   searchName:'',
+		          name: '',
+		          type: '',
+		          status: '',
+		          pageSize:10,
+		          pageNum:1,
+		        },
+		dialogVisible:false,
+		labelPosition: 'right',
+		qrcode:false,
+		formInline: {//订单表单
+	          paytype:'wx'
+	        }
+	  },
+	  methods:{
+		  //加载数据
+		  initData(){
+			  axios.post('/roomList',this.searchForm)
+			  .then(res=>{
+				  //this.tableData = res.data.data;
+				  this.tableData = res.data.data.list;
+				  this.totals=res.data.data.total;
+			}).catch(error=>{
+				
+			})
+		  },
+		  currentChangeHandle(val){ //跳转页
+		      this.searchForm.pageNum=val;
+		      this.initData();
+		  },
+		  sizeChangeHandle(val){//选择每页数据的
+		      this.searchForm.pageSize=val;
+		      this.initData();
+		  },
+		  viewPic(item){
+			  this.srcList = item.profile;
+			  if(item.profile==null){
+				  var arr = new Array();
+				  arr.push('/static/front/index/images/room_list_01.jpg');
+				  this.srcList = arr;
+			  }else{
+				  var arr = new Array();
+				  arr.push('http://localhost:80/'+item.profile);
+				  this.srcList = arr;
+			  }
+		  },
+		  yuding(row){
+			  axios.get('/getRoomById/'+row.id)
+			  .then(res=>{
+				 if(res.data.data.status!='1'){
+					  this.dialogVisible = false;
+					 this.$message({
+				          message: '该房间处于不可使用状态',
+				          type: 'error'
+				        });
+					 this.initData();
+				 }else{
+					 this.dialogVisible = true;
+					 this.formInline.rid = row.id;
+					 this.qrcode=false;
+				 }
+				}).catch(error=>{
+					
+				})
+			  
+		  },
+		  makeCode(){
+			  this.qrcode=true;
+			  axios.post('/qrCode')
+			  .then(res=>{
+				  if(res.data.code==200){
+					  this.formInline.oid = res.data.data.orderId;
+					  $("#qrImage").qrcode({
+						    width:100,
+						    height:100,
+						    text:res.data.data.code_url,
+						})
+				  }else{
+					  this.$message({
+				          message: res.data.msg,
+				          type: 'error'
+				        });
+				  }
+			}).catch(error=>{
+				console.log(error);
+			})
+		  },
+		  havePaied(){
+			  if(this.formInline.oid==null||this.formInline.oid==''){
+				  this.$message('请先生成订单');
+				  return ;
+			  }
+			  axios.get('/payState/'+this.formInline.oid)
+			  .then(res=>{
+				 if(res.data.code==200){
+					 this.$message({
+				          message: res.data.msg,
+				          type: 'success'
+				        });
+					 //支付成功了，处理订单
+					 this.makeOrder();
+				 }else{
+					 this.$message({
+				          message: res.data.msg,
+				          type: 'error'
+				        });
+				 }
+				}).catch(error=>{
+					
+				})
+		  },
+		  makeOrder(){
+			  axios.post('/makeOrder',this.formInline)
+			  .then(res=>{
+				  this.formInline={paytype:'wx'};
+				  this.initData();
+				  this.dialogVisible=false;
+			}).catch(error=>{
+			})
+		  }
+	  },
+	  created(){
+		  this.initData();
+	  },
+
+	})
+</script>
